@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReliefRadar Live API Prototype</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#131a31;
+      --panel2:#192342;
+      --text:#eef3ff;
+      --muted:#a4afcf;
+      --border:rgba(255,255,255,0.09);
+      --accent:#ff6f47;
+      --blue:#72d4ff;
+      --green:#7dd87a;
+      --yellow:#f2c35e;
+      --red:#ff6a74;
+      --shadow:0 14px 40px rgba(0,0,0,.28);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(114,212,255,.10), transparent 30%),
+        radial-gradient(circle at top left, rgba(255,111,71,.10), transparent 32%),
+        var(--bg);
+    }
+    a{color:inherit}
+    .shell{max-width:1440px;margin:0 auto;padding:22px}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .hero{
+      display:grid;
+      grid-template-columns:1.5fr .9fr;
+      gap:18px;
+      margin-bottom:18px;
+    }
+    .hero-main{padding:28px;position:relative;overflow:hidden}
+    .hero-main:after{
+      content:"";
+      position:absolute;
+      right:-70px;bottom:-70px;
+      width:220px;height:220px;border-radius:50%;
+      background:radial-gradient(circle, rgba(255,111,71,.16), transparent 68%);
+    }
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:8px;
+      font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)
+    }
+    .live-dot{
+      width:9px;height:9px;border-radius:50%;background:var(--green);
+      box-shadow:0 0 12px rgba(125,216,122,.7);animation:pulse 1.8s infinite
+    }
+    @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.55}}
+    h1{margin:14px 0 0;font-size:clamp(34px,5vw,56px);line-height:.98;letter-spacing:-.05em}
+    .subcopy{margin-top:14px;max-width:780px;color:var(--muted);font-size:16px;line-height:1.65}
+    .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+    button,.button-link{
+      border:0;border-radius:999px;padding:12px 16px;font-weight:800;cursor:pointer;
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;
+      transition:transform .16s ease, background .16s ease, opacity .16s ease
+    }
+    button:hover,.button-link:hover{transform:translateY(-1px)}
+    .primary{background:linear-gradient(135deg,var(--accent),#ff8a66);color:#fff}
+    .secondary{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--border)}
+    .hero-side{padding:22px;display:grid;gap:12px}
+    .side-title{font-weight:800}
+    .side-sub{color:var(--muted);font-size:12px}
+    .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .kpi{background:var(--panel2);border:1px solid var(--border);border-radius:18px;padding:16px}
+    .kpi-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .kpi-value{font-size:30px;font-weight:900;letter-spacing:-.04em;margin-top:6px}
+    .kpi-note{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}
+
+    .toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:14px 16px;margin-bottom:18px;flex-wrap:wrap}
+    .filters,.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .pill{
+      padding:10px 14px;border-radius:999px;border:1px solid var(--border);
+      background:rgba(255,255,255,.04);color:var(--muted);font-weight:800;font-size:13px
+    }
+    .pill.active{background:rgba(255,111,71,.14);border-color:rgba(255,111,71,.34);color:#fff}
+    input,select{
+      background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--border);
+      border-radius:14px;padding:11px 14px;min-width:190px
+    }
+
+    .layout{display:grid;grid-template-columns:340px 1fr 380px;gap:18px}
+    .panel{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;min-height:680px}
+    .panel-head{display:flex;justify-content:space-between;gap:12px;align-items:start;padding:18px 18px 14px;border-bottom:1px solid var(--border)}
+    .panel-title{font-size:15px;font-weight:900;letter-spacing:-.02em}
+    .panel-sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45}
+    .small{font-size:12px;color:var(--muted)}
+    .events{max-height:620px;overflow:auto;padding:10px}
+    .event{
+      border:1px solid transparent;background:rgba(255,255,255,.035);border-radius:18px;
+      padding:14px;margin-bottom:10px;cursor:pointer;transition:transform .16s ease,background .16s ease,border-color .16s ease
+    }
+    .event:hover{transform:translateY(-1px);background:rgba(255,255,255,.05)}
+    .event.active{border-color:rgba(114,212,255,.35);background:linear-gradient(180deg, rgba(114,212,255,.12), rgba(255,255,255,.03))}
+    .row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;letter-spacing:.02em}
+    .type-earthquake{background:rgba(114,212,255,.16);color:#adeaff}
+    .type-weather{background:rgba(125,216,122,.16);color:#c3f8c1}
+    .type-wildfire{background:rgba(242,195,94,.16);color:#ffe2a3}
+    .type-volcano{background:rgba(255,106,116,.16);color:#ffc0c5}
+    .sev-high{color:var(--red)} .sev-medium{color:var(--yellow)} .sev-low{color:var(--green)}
+    .event-title{margin:10px 0 6px;font-weight:900;font-size:15px;line-height:1.35}
+    .event-meta{color:var(--muted);font-size:12px;line-height:1.5}
+
+    .map-zone{
+      position:relative;height:250px;padding:20px;border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(114,212,255,.08), rgba(255,255,255,.01)), rgba(255,255,255,.02);
+      overflow:hidden
+    }
+    .grid-map{
+      position:absolute;inset:0;
+      background-image:linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+      background-size:42px 42px;mask-image:linear-gradient(180deg, rgba(255,255,255,.6), transparent)
+    }
+    .pulse-point{
+      position:absolute;width:18px;height:18px;border-radius:50%;background:rgba(255,111,71,.96);
+      box-shadow:0 0 0 0 rgba(255,111,71,.42);animation:radar 1.8s infinite
+    }
+    @keyframes radar{0%{box-shadow:0 0 0 0 rgba(255,111,71,.42)}100%{box-shadow:0 0 0 24px rgba(255,111,71,0)}}
+    .map-caption{position:absolute;left:20px;right:20px;bottom:18px;display:flex;justify-content:space-between;gap:12px;align-items:end}
+    .detail{padding:20px;max-height:430px;overflow:auto}
+    .detail-title{font-size:28px;font-weight:900;line-height:1.05;letter-spacing:-.04em;margin:10px 0 8px}
+    .detail-copy{color:var(--muted);font-size:14px;line-height:1.65}
+    .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}
+    .metric{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px}
+    .metric .label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+    .metric .value{font-size:21px;font-weight:900;margin-top:6px}
+    .section{margin-top:20px}
+    .section h3{margin:0 0 10px;font-size:13px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+    .forecast{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .forecast-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px}
+    .forecast-day{font-size:12px;color:var(--muted)}
+    .forecast-temp{font-size:22px;font-weight:900;margin:6px 0}
+    .forecast-note{font-size:12px;color:var(--muted);line-height:1.4}
+    .alert-box{margin-top:14px;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);font-size:12px;line-height:1.6}
+    .nonprofits{padding:14px;display:grid;gap:10px}
+    .ngo{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:18px;padding:14px}
+    .ngo-top{display:flex;justify-content:space-between;gap:12px;align-items:start}
+    .ngo-name{font-weight:900}
+    .ngo-focus,.ngo-reason{color:var(--muted);font-size:12px;line-height:1.55}
+    .score{background:rgba(114,212,255,.14);color:#bcefff;border:1px solid rgba(114,212,255,.25);border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;white-space:nowrap}
+    .ngo-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .status-banner{margin-bottom:14px;padding:12px 14px;border-radius:16px;border:1px solid var(--border);font-size:13px;line-height:1.55}
+    .status-ok{background:rgba(125,216,122,.08);color:#d1f5cf}
+    .status-warn{background:rgba(242,195,94,.08);color:#ffe9b8}
+    .empty{padding:22px;color:var(--muted);text-align:center}
+    .footer-note{margin-top:16px;color:var(--muted);font-size:12px;line-height:1.6}
+
+    @media (max-width:1180px){
+      .layout{grid-template-columns:320px 1fr}
+      .sidebar-right{grid-column:1 / -1;min-height:auto}
+      .nonprofits{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:860px){
+      .hero,.layout{grid-template-columns:1fr}
+      .forecast,.metrics,.nonprofits,.kpis{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:620px){
+      .shell{padding:14px}
+      .forecast,.metrics,.nonprofits,.kpis{grid-template-columns:1fr}
+      input,select{width:100%;min-width:0}
+      .filters,.controls{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="card hero-main">
+        <div class="eyebrow"><span class="live-dot"></span> Live API prototype</div>
+        <h1>ReliefRadar turns live disaster feeds into donation recommendations.</h1>
+        <p class="subcopy">
+          This browser-based prototype pulls live events from USGS earthquakes, NOAA/NWS alerts, and NASA EONET, then recommends nonprofits by disaster type, geography, and response fit.
+        </p>
+        <div class="hero-actions">
+          <button class="primary" onclick="scrollToFeed()">Explore live incidents</button>
+          <button class="secondary" onclick="loadAll()">Refresh live data</button>
+        </div>
+      </div>
+      <div class="card hero-side">
+        <div>
+          <div class="side-title">What this version does</div>
+          <div class="side-sub">Real browser fetches, normalized events, live filters, and nonprofit ranking</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-label">Sources</div>
+            <div class="kpi-value">3</div>
+            <div class="kpi-note">USGS, NOAA/NWS, NASA EONET</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Refresh cadence</div>
+            <div class="kpi-value">5 min</div>
+            <div class="kpi-note">Automatic refresh in browser</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Event ranking</div>
+            <div class="kpi-value">Live</div>
+            <div class="kpi-note">Severity + recency + source details</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Donate action</div>
+            <div class="kpi-value">1 click</div>
+            <div class="kpi-note">Outbound nonprofit links</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="statusBanner" class="status-banner status-ok">Loading live feeds…</div>
+
+    <section class="card toolbar" id="liveFeed">
+      <div class="filters">
+        <button class="pill active" data-filter="all">All</button>
+        <button class="pill" data-filter="earthquake">Earthquakes</button>
+        <button class="pill" data-filter="weather">Weather</button>
+        <button class="pill" data-filter="wildfire">Wildfires</button>
+        <button class="pill" data-filter="volcano">Volcanoes</button>
+      </div>
+      <div class="controls">
+        <input id="searchInput" type="text" placeholder="Search region or event" />
+        <select id="sortSelect">
+          <option value="priority">Sort by priority</option>
+          <option value="recent">Most recent</option>
+          <option value="severity">Highest severity</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Live incident feed</div>
+            <div class="panel-sub">Normalized cards from multiple public APIs</div>
+          </div>
+          <div class="small" id="updatedAt">Waiting…</div>
+        </div>
+        <div class="events" id="eventList">
+          <div class="empty">Loading live events…</div>
+        </div>
+      </aside>
+
+      <main class="panel">
+        <div class="map-zone">
+          <div class="grid-map"></div>
+          <div class="pulse-point" id="mapPoint" style="left:52%;top:42%"></div>
+          <div class="map-caption">
+            <div>
+              <div class="panel-title">Approximate event area</div>
+              <div class="panel-sub" id="mapLabel">Waiting for live event data…</div>
+            </div>
+            <div class="small" id="coordLabel">Lat —, Lon —</div>
+          </div>
+        </div>
+        <div class="detail" id="detailPane">
+          <div class="empty">Choose an event to see details, weather context, and nonprofit matches.</div>
+        </div>
+      </main>
+
+      <aside class="panel sidebar-right">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Recommended nonprofits</div>
+            <div class="panel-sub">Ranked by type match, region fit, and response relevance</div>
+          </div>
+          <div class="small" id="ngoCount">0 matches</div>
+        </div>
+        <div class="nonprofits" id="ngoList"></div>
+      </aside>
+    </section>
+
+    <div class="footer-note">
+      Built as a front-end prototype. In production, add a backend cache, rate-limit protection, a vetted nonprofit dataset, and a disclaimer that NASA EONET is mainly for visualization/general reference.
+    </div>
+  </div>
+
+  <script>
+    const API = {
+      usgs: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson',
+      noaaAlerts: 'https://api.weather.gov/alerts/active?status=actual&message_type=alert&urgency=Immediate,Expected&severity=Extreme,Severe',
+      noaaPoint: (lat, lon) => `https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`,
+      nasaWildfires: 'https://eonet.gsfc.nasa.gov/api/v3/events/geojson?category=wildfires&status=open&days=30&limit=20',
+      nasaVolcanoes: 'https://eonet.gsfc.nasa.gov/api/v3/events/geojson?category=volcanoes&status=open&days=90&limit=20'
+    };
+
+    const NONPROFITS = [
+      {
+        name:'American Red Cross',
+        types:['earthquake','weather','wildfire','volcano'],
+        regions:['global','United States','Japan','Philippines','Indonesia','Türkiye','Turkey'],
+        focus:'Emergency shelter, relief logistics, and rapid disaster response.',
+        trust:95,
+        url:'https://www.redcross.org/donate',
+        reason:'Strong immediate-response fit for displacement, shelter, and relief operations.'
+      },
+      {
+        name:'Direct Relief',
+        types:['earthquake','weather','wildfire','volcano'],
+        regions:['global','Japan','Philippines','Indonesia','Türkiye','Turkey'],
+        focus:'Medical aid, protective equipment, and support for emergency health systems.',
+        trust:94,
+        url:'https://www.directrelief.org/',
+        reason:'Ranks highly when access to clinics, medical supplies, or health support matters.'
+      },
+      {
+        name:'Team Rubicon',
+        types:['earthquake','weather','wildfire'],
+        regions:['global','United States'],
+        focus:'Veteran-led disaster response, cleanup, debris removal, and field deployment.',
+        trust:91,
+        url:'https://teamrubiconusa.org/donate/',
+        reason:'Strong for rapid domestic response and on-the-ground operational support.'
+      },
+      {
+        name:'Habitat for Humanity',
+        types:['earthquake','weather'],
+        regions:['global','United States','Philippines','Türkiye','Turkey'],
+        focus:'Housing recovery, rebuilding, and community recovery after damage.',
+        trust:88,
+        url:'https://www.habitat.org/donate',
+        reason:'Especially relevant when shelter repair and rebuilding are likely to matter.'
+      },
+      {
+        name:'Feeding America',
+        types:['weather','wildfire'],
+        regions:['United States'],
+        focus:'Food distribution and support for displaced households and shelters.',
+        trust:89,
+        url:'https://www.feedingamerica.org/donate',
+        reason:'Useful when domestic disasters disrupt local food access.'
+      },
+      {
+        name:'CARE',
+        types:['earthquake','weather'],
+        regions:['global','Philippines','Türkiye','Turkey','Japan'],
+        focus:'Humanitarian response for families and vulnerable communities.',
+        trust:90,
+        url:'https://www.care.org/',
+        reason:'Good international fit where household-level humanitarian relief is needed.'
+      },
+      {
+        name:'National Forest Foundation',
+        types:['wildfire'],
+        regions:['United States'],
+        focus:'Forest restoration and long-term landscape recovery after wildfires.',
+        trust:84,
+        url:'https://www.nationalforests.org/',
+        reason:'More recovery-oriented than emergency shelter, but relevant for wildfire aftermath.'
+      },
+      {
+        name:'World Food Programme',
+        types:['earthquake','weather','volcano'],
+        regions:['global','Philippines','Indonesia','Türkiye','Turkey','Japan'],
+        focus:'Emergency food operations and humanitarian logistics.',
+        trust:93,
+        url:'https://www.wfp.org/support-us/stories/how-to-donate-wfp',
+        reason:'Strong fit when large groups may need food access quickly.'
+      }
+    ];
+
+    let ALL_EVENTS = [];
+    let selectedId = null;
+    let selectedFilter = 'all';
+
+    function scrollToFeed() {
+      document.getElementById('liveFeed').scrollIntoView({ behavior:'smooth' });
+    }
+
+    function setStatus(message, kind='ok') {
+      const el = document.getElementById('statusBanner');
+      el.className = `status-banner ${kind === 'warn' ? 'status-warn' : 'status-ok'}`;
+      el.textContent = message;
+    }
+
+    function sevClass(level) {
+      if (level >= 3) return 'sev-high';
+      if (level === 2) return 'sev-medium';
+      return 'sev-low';
+    }
+
+    function sevWords(level) {
+      if (level >= 3) return 'High severity';
+      if (level === 2) return 'Moderate severity';
+      return 'Lower severity';
+    }
+
+    function timeAgo(ms) {
+      const diff = Date.now() - ms;
+      const mins = Math.max(1, Math.floor(diff / 60000));
+      if (mins < 60) return `${mins} min ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs} hr ago`;
+      const days = Math.floor(hrs / 24);
+      return `${days} d ago`;
+    }
+
+    function safeText(v, fallback='—') {
+      return (v === null || v === undefined || v === '') ? fallback : v;
+    }
+
+    function centroidFromGeometry(geometry) {
+      if (!geometry || !geometry.type || !geometry.coordinates) return { lat:null, lon:null };
+      const t = geometry.type;
+      const c = geometry.coordinates;
+      if (t === 'Point') return { lon:c[0], lat:c[1] };
+      if (t === 'Polygon') {
+        const ring = c[0] || [];
+        if (!ring.length) return { lat:null, lon:null };
+        let lon = 0, lat = 0;
+        ring.forEach(p => { lon += p[0]; lat += p[1]; });
+        return { lon: lon / ring.length, lat: lat / ring.length };
+      }
+      if (t === 'MultiPolygon') {
+        const first = c[0] && c[0][0] ? c[0][0] : [];
+        if (!first.length) return { lat:null, lon:null };
+        let lon = 0, lat = 0;
+        first.forEach(p => { lon += p[0]; lat += p[1]; });
+        return { lon: lon / first.length, lat: lat / first.length };
+      }
+      return { lat:null, lon:null };
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url, { headers: { 'Accept':'application/geo+json, application/ld+json, application/json' } });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    }
+
+    async function fetchUSGS() {
+      const d = await fetchJson(API.usgs);
+      return (d.features || []).slice(0, 24).map(f => {
+        const mag = f.properties?.mag ?? null;
+        const coords = f.geometry?.coordinates || [];
+        const title = f.properties?.title || f.properties?.place || 'Earthquake event';
+        const region = f.properties?.place || 'Unknown region';
+        return {
+          id: `usgs-${f.id}`,
+          type: 'earthquake',
+          title,
+          region,
+          source: 'USGS',
+          severity: mag >= 6 ? 3 : mag >= 4.5 ? 2 : 1,
+          ts: f.properties?.time || Date.now(),
+          lat: coords[1] ?? null,
+          lon: coords[0] ?? null,
+          summary: `Magnitude ${safeText(mag, '—')} earthquake reported by USGS.`,
+          metrics: {
+            magnitude: mag ? mag.toFixed(1) : '—',
+            depth: coords[2] != null ? `${Math.round(coords[2])} km` : '—',
+            tsunami: f.properties?.tsunami ? 'Possible' : 'No'
+          },
+          link: f.properties?.url || '',
+          rawSourceLabel: f.properties?.alert ? `USGS alert: ${f.properties.alert}` : 'USGS live feed'
+        };
+      });
+    }
+
+    async function fetchNOAAAlerts() {
+      const d = await fetchJson(API.noaaAlerts);
+      return (d.features || []).slice(0, 24).map(f => {
+        const p = f.properties || {};
+        const center = centroidFromGeometry(f.geometry);
+        const severity = p.severity === 'Extreme' ? 3 : p.severity === 'Severe' ? 2 : 1;
+        const area = p.areaDesc ? p.areaDesc.split(';')[0] : 'United States';
+        return {
+          id: `noaa-${(f.id || p.id || Math.random()).toString().replace(/[^a-zA-Z0-9_-]/g,'')}`,
+          type: 'weather',
+          title: p.event || 'Weather alert',
+          region: area,
+          source: 'NOAA / NWS',
+          severity,
+          ts: p.sent ? new Date(p.sent).getTime() : Date.now(),
+          lat: center.lat,
+          lon: center.lon,
+          summary: p.headline || p.description || 'Severe weather alert issued by NOAA/NWS.',
+          metrics: {
+            urgency: safeText(p.urgency),
+            severity: safeText(p.severity),
+            certainty: safeText(p.certainty)
+          },
+          link: p.web || p['@id'] || '',
+          instruction: p.instruction || '',
+          rawSourceLabel: 'NOAA active alert'
+        };
+      });
+    }
+
+    function latestCoordinate(geometry, dates) {
+      if (!geometry || !geometry.coordinates) return { lat:null, lon:null };
+      const coords = geometry.coordinates;
+      if (geometry.type === 'Point') return { lon: coords[0], lat: coords[1] };
+      if (geometry.type === 'LineString' && coords.length) {
+        const last = coords[coords.length - 1];
+        return { lon:last[0], lat:last[1] };
+      }
+      return { lat:null, lon:null };
+    }
+
+    async function fetchEONET(url, type, sourceName) {
+      const d = await fetchJson(url);
+      return (d.features || []).map(f => {
+        const props = f.properties || {};
+        const coord = latestCoordinate(f.geometry, props.geometryDates);
+        const when = props.geometryDates && props.geometryDates.length
+          ? new Date(props.geometryDates[props.geometryDates.length - 1]).getTime()
+          : Date.now();
+        return {
+          id: `nasa-${type}-${props.id || Math.random().toString(36).slice(2)}`,
+          type,
+          title: props.title || `${type} event`,
+          region: 'Open event',
+          source: sourceName,
+          severity: 2,
+          ts: when,
+          lat: coord.lat,
+          lon: coord.lon,
+          summary: `${props.title || 'Natural event'} currently listed as open in NASA EONET.`,
+          metrics: {
+            status: props.closed ? 'Closed' : 'Open',
+            sources: Array.isArray(props.sources) ? `${props.sources.length}` : '—',
+            category: type
+          },
+          link: Array.isArray(props.sources) && props.sources[0] ? props.sources[0].url : '',
+          rawSourceLabel: 'NASA EONET open event'
+        };
+      });
+    }
+
+    async function fetchForecast(lat, lon) {
+      if (lat == null || lon == null) return null;
+      try {
+        const point = await fetchJson(API.noaaPoint(lat, lon));
+        const forecastUrl = point.properties?.forecast;
+        if (!forecastUrl) return null;
+        const forecast = await fetchJson(forecastUrl);
+        return (forecast.properties?.periods || []).slice(0, 4).map(p => ({
+          day: p.name,
+          temp: `${p.temperature}°${p.temperatureUnit || ''}`,
+          note: p.shortForecast || '—'
+        }));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function scoreNonprofit(event, ngo) {
+      let score = 0;
+      if (ngo.types.includes(event.type)) score += 45;
+      if (ngo.regions.includes('global')) score += 18;
+      if (ngo.regions.some(r => event.region.includes(r))) score += 28;
+      score += Math.round(ngo.trust * 0.12);
+      if (event.severity >= 3 && /emergency|rapid|medical|relief|shelter/i.test(`${ngo.focus} ${ngo.reason}`)) score += 8;
+      return score;
+    }
+
+    function getRecommendations(event) {
+      return NONPROFITS
+        .filter(ngo => ngo.types.includes(event.type))
+        .map(ngo => ({ ...ngo, fitScore: scoreNonprofit(event, ngo) }))
+        .sort((a,b) => b.fitScore - a.fitScore)
+        .slice(0, 4);
+    }
+
+    function priorityScore(e) {
+      return e.severity * 10000000000000 + e.ts;
+    }
+
+    function getVisibleEvents() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const sort = document.getElementById('sortSelect').value;
+
+      let list = ALL_EVENTS
+        .filter(e => selectedFilter === 'all' ? true : e.type === selectedFilter)
+        .filter(e => !q || `${e.title} ${e.region} ${e.source} ${e.summary}`.toLowerCase().includes(q));
+
+      list.sort((a,b) => {
+        if (sort === 'recent') return b.ts - a.ts;
+        if (sort === 'severity') return b.severity - a.severity || (b.ts - a.ts);
+        return priorityScore(b) - priorityScore(a);
+      });
+
+      if (!list.some(e => e.id === selectedId) && list.length) selectedId = list[0].id;
+      return list;
+    }
+
+    function renderList() {
+      const list = getVisibleEvents();
+      const el = document.getElementById('eventList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty">No events match the current filters.</div>';
+        return;
+      }
+      el.innerHTML = list.map(e => `
+        <article class="event ${e.id === selectedId ? 'active' : ''}" onclick="selectEvent('${e.id}')">
+          <div class="row">
+            <span class="badge type-${e.type}">${e.type}</span>
+            <span class="small ${sevClass(e.severity)}">${sevWords(e.severity)}</span>
+          </div>
+          <div class="event-title">${escapeHtml(e.title)}</div>
+          <div class="event-meta">${escapeHtml(e.region)} · ${escapeHtml(e.source)}</div>
+          <div class="event-meta">${timeAgo(e.ts)}</div>
+        </article>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    async function renderDetail() {
+      const event = ALL_EVENTS.find(e => e.id === selectedId);
+      if (!event) {
+        document.getElementById('detailPane').innerHTML = '<div class="empty">No event selected.</div>';
+        document.getElementById('ngoList').innerHTML = '';
+        document.getElementById('ngoCount').textContent = '0 matches';
+        return;
+      }
+
+      const fallbackForecast = [
+        { day:'Now', temp:'—', note:'No forecast available' },
+        { day:'Next', temp:'—', note:'Location may be outside NOAA forecast coverage' },
+        { day:'Later', temp:'—', note:'You can replace with another weather API for global coverage' },
+        { day:'Prod', temp:'—', note:'Backend cache recommended' }
+      ];
+
+      const forecast = await fetchForecast(event.lat, event.lon) || fallbackForecast;
+
+      document.getElementById('detailPane').innerHTML = `
+        <div class="badge type-${event.type}">${escapeHtml(event.type)}</div>
+        <div class="detail-title">${escapeHtml(event.title)}</div>
+        <p class="detail-copy">${escapeHtml(event.summary)}</p>
+
+        <div class="metrics">
+          ${Object.entries(event.metrics).map(([k,v]) => `
+            <div class="metric">
+              <div class="label">${escapeHtml(k)}</div>
+              <div class="value">${escapeHtml(v)}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="section">
+          <h3>Source context</h3>
+          <p class="detail-copy">${escapeHtml(event.rawSourceLabel)} · ${timeAgo(event.ts)}</p>
+        </div>
+
+        <div class="section">
+          <h3>Forecast near event</h3>
+          <div class="forecast">
+            ${forecast.map(slot => `
+              <div class="forecast-card">
+                <div class="forecast-day">${escapeHtml(slot.day)}</div>
+                <div class="forecast-temp">${escapeHtml(slot.temp)}</div>
+                <div class="forecast-note">${escapeHtml(slot.note)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        ${event.instruction ? `<div class="alert-box"><strong>Instructions:</strong> ${escapeHtml(event.instruction)}</div>` : ''}
+
+        ${event.link ? `<div class="alert-box">Source link: <a href="${event.link}" target="_blank" rel="noreferrer">Open event source</a></div>` : ''}
+
+        <div class="alert-box">
+          Prototype note: coordinates are approximate for some alerts, and global weather forecasts may need a non-NOAA fallback outside NOAA coverage.
+        </div>
+      `;
+
+      document.getElementById('mapLabel').textContent = event.region || 'Approximate area';
+      document.getElementById('coordLabel').textContent =
+        event.lat != null && event.lon != null
+          ? `Lat ${event.lat.toFixed(2)}, Lon ${event.lon.toFixed(2)}`
+          : 'Lat —, Lon —';
+
+      const point = document.getElementById('mapPoint');
+      if (event.lat != null && event.lon != null) {
+        const x = ((event.lon + 180) / 360) * 100;
+        const y = ((90 - event.lat) / 180) * 100;
+        point.style.left = `${Math.max(8, Math.min(92, x))}%`;
+        point.style.top = `${Math.max(8, Math.min(78, y))}%`;
+        point.style.display = 'block';
+      } else {
+        point.style.display = 'none';
+      }
+
+      const ngos = getRecommendations(event);
+      document.getElementById('ngoCount').textContent = `${ngos.length} matches`;
+      document.getElementById('ngoList').innerHTML = ngos.map(ngo => `
+        <article class="ngo">
+          <div class="ngo-top">
+            <div>
+              <div class="ngo-name">${escapeHtml(ngo.name)}</div>
+              <div class="ngo-focus">${escapeHtml(ngo.focus)}</div>
+            </div>
+            <div class="score">Fit ${ngo.fitScore}</div>
+          </div>
+          <div class="ngo-reason" style="margin-top:10px">Why recommended: ${escapeHtml(ngo.reason)}</div>
+          <div class="ngo-actions">
+            <a class="button-link primary" href="${ngo.url}" target="_blank" rel="noreferrer">Donate</a>
+            <button class="secondary" onclick="showProfile('${encodeURIComponent(JSON.stringify(ngo))}')">View profile</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function showProfile(encoded) {
+      const ngo = JSON.parse(decodeURIComponent(encoded));
+      alert(`${ngo.name}\n\nFocus: ${ngo.focus}\n\nReason: ${ngo.reason}\n\nIn a full version, this opens a profile with ratings, service area, active responses, and donation transparency.`);
+    }
+
+    function selectEvent(id) {
+      selectedId = id;
+      renderList();
+      renderDetail();
+    }
+
+    async function loadAll() {
+      setStatus('Loading live feeds from USGS, NOAA/NWS, and NASA EONET…', 'ok');
+      document.getElementById('updatedAt').textContent = 'Refreshing…';
+      try {
+        const results = await Promise.allSettled([
+          fetchUSGS(),
+          fetchNOAAAlerts(),
+          fetchEONET(API.nasaWildfires, 'wildfire', 'NASA EONET'),
+          fetchEONET(API.nasaVolcanoes, 'volcano', 'NASA EONET')
+        ]);
+
+        const events = [];
+        const failures = [];
+
+        results.forEach((r, idx) => {
+          if (r.status === 'fulfilled') events.push(...r.value);
+          else failures.push(idx);
+        });
+
+        ALL_EVENTS = events.filter(e => e && e.title);
+        ALL_EVENTS.sort((a,b) => priorityScore(b) - priorityScore(a));
+        if (ALL_EVENTS.length && !selectedId) selectedId = ALL_EVENTS[0].id;
+
+        renderList();
+        await renderDetail();
+
+        const counts = {
+          earthquake: ALL_EVENTS.filter(e => e.type === 'earthquake').length,
+          weather: ALL_EVENTS.filter(e => e.type === 'weather').length,
+          wildfire: ALL_EVENTS.filter(e => e.type === 'wildfire').length,
+          volcano: ALL_EVENTS.filter(e => e.type === 'volcano').length,
+        };
+
+        let msg = `Loaded ${ALL_EVENTS.length} live events: ${counts.earthquake} earthquakes, ${counts.weather} weather alerts, ${counts.wildfire} wildfires, ${counts.volcano} volcanoes.`;
+        let kind = 'ok';
+        if (failures.length) {
+          msg += ' Some feeds failed in the browser, so partial data is shown.';
+          kind = 'warn';
+        }
+        setStatus(msg, kind);
+        document.getElementById('updatedAt').textContent =
+          `Updated ${new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}`;
+      } catch (err) {
+        setStatus(`Could not load live feeds in this browser session: ${err.message}`, 'warn');
+        document.getElementById('eventList').innerHTML = '<div class="empty">Live API calls failed. Check console/network access, then refresh.</div>';
+        document.getElementById('detailPane').innerHTML = '<div class="empty">No live event available.</div>';
+        document.getElementById('ngoList').innerHTML = '';
+      }
+    }
+
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedFilter = btn.dataset.filter;
+        document.querySelectorAll('[data-filter]').forEach(el => el.classList.remove('active'));
+        btn.classList.add('active');
+        renderList();
+        renderDetail();
+      });
+    });
+
+    document.getElementById('searchInput').addEventListener('input', () => {
+      renderList();
+      renderDetail();
+    });
+    document.getElementById('sortSelect').addEventListener('change', () => {
+      renderList();
+      renderDetail();
+    });
+
+    loadAll();
+    setInterval(loadAll, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
