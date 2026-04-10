@@ -73,6 +73,7 @@
     button:hover,.button-link:hover{transform:translateY(-1px)}
     .primary{background:linear-gradient(135deg,var(--accent),#ff8a66);color:#fff}
     .secondary{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--border)}
+    .ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
     .hero-side{padding:22px;display:grid;gap:12px}
     .side-title{font-weight:800}
     .side-sub{color:var(--muted);font-size:12px}
@@ -140,6 +141,7 @@
     .metric{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px}
     .metric .label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
     .metric .value{font-size:21px;font-weight:900;margin-top:6px}
+    .metric .subvalue{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
     .section{margin-top:20px}
     .section h3{margin:0 0 10px;font-size:13px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
     .forecast{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -161,18 +163,39 @@
     .empty{padding:22px;color:var(--muted);text-align:center}
     .footer-note{margin-top:16px;color:var(--muted);font-size:12px;line-height:1.6}
 
+    .view{display:none}
+    .view.active{display:block}
+    .profile-shell{display:grid;gap:18px}
+    .profile-header{padding:26px}
+    .profile-top{display:flex;justify-content:space-between;gap:18px;align-items:start;flex-wrap:wrap}
+    .profile-title{font-size:clamp(28px,4vw,44px);font-weight:900;letter-spacing:-.05em;line-height:1}
+    .profile-summary{margin-top:12px;max-width:880px;color:var(--muted);line-height:1.7}
+    .profile-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+    .profile-panel{padding:22px}
+    .profile-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .analysis-list,.signal-list{display:grid;gap:10px;margin-top:12px}
+    .analysis-item,.signal-item{padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);line-height:1.6}
+    .signal-item strong,.analysis-item strong{color:var(--text)}
+    .mini-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px}
+    .mini-kpi{padding:14px;border-radius:16px;background:var(--panel);border:1px solid var(--border)}
+    .mini-kpi .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .mini-kpi .value{font-size:22px;font-weight:900;margin-top:6px}
+    .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    .tag{padding:8px 12px;border-radius:999px;background:rgba(114,212,255,.12);border:1px solid rgba(114,212,255,.2);font-size:12px;color:#d7f4ff}
+
     @media (max-width:1180px){
       .layout{grid-template-columns:320px 1fr}
       .sidebar-right{grid-column:1 / -1;min-height:auto}
       .nonprofits{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .profile-grid{grid-template-columns:1fr}
     }
     @media (max-width:860px){
       .hero,.layout{grid-template-columns:1fr}
-      .forecast,.metrics,.nonprofits,.kpis{grid-template-columns:1fr 1fr}
+      .forecast,.metrics,.nonprofits,.kpis,.mini-kpis{grid-template-columns:1fr 1fr}
     }
     @media (max-width:620px){
       .shell{padding:14px}
-      .forecast,.metrics,.nonprofits,.kpis{grid-template-columns:1fr}
+      .forecast,.metrics,.nonprofits,.kpis,.mini-kpis{grid-template-columns:1fr}
       input,select{width:100%;min-width:0}
       .filters,.controls{width:100%}
     }
@@ -180,114 +203,175 @@
 </head>
 <body>
   <div class="shell">
-    <section class="hero">
-      <div class="card hero-main">
-        <div class="eyebrow"><span class="live-dot"></span> Live API prototype</div>
-        <h1>ReliefRadar turns live disaster feeds into donation recommendations.</h1>
-        <p class="subcopy">
-          This browser-based prototype pulls live events from USGS earthquakes, NOAA/NWS alerts, and NASA EONET, then recommends nonprofits by disaster type, geography, and response fit.
-        </p>
-        <div class="hero-actions">
-          <button class="primary" onclick="scrollToFeed()">Explore live incidents</button>
-          <button class="secondary" onclick="loadAll()">Refresh live data</button>
-        </div>
-      </div>
-      <div class="card hero-side">
-        <div>
-          <div class="side-title">What this version does</div>
-          <div class="side-sub">Real browser fetches, normalized events, live filters, and nonprofit ranking</div>
-        </div>
-        <div class="kpis">
-          <div class="kpi">
-            <div class="kpi-label">Sources</div>
-            <div class="kpi-value">3</div>
-            <div class="kpi-note">USGS, NOAA/NWS, NASA EONET</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Refresh cadence</div>
-            <div class="kpi-value">5 min</div>
-            <div class="kpi-note">Automatic refresh in browser</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Event ranking</div>
-            <div class="kpi-value">Live</div>
-            <div class="kpi-note">Severity + recency + source details</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Donate action</div>
-            <div class="kpi-value">1 click</div>
-            <div class="kpi-note">Outbound nonprofit links</div>
+    <section id="homeView" class="view active">
+      <section class="hero">
+        <div class="card hero-main">
+          <div class="eyebrow"><span class="live-dot"></span> Live API prototype</div>
+          <h1>ReliefRadar turns live disaster feeds into donation recommendations.</h1>
+          <p class="subcopy">
+            This browser-based prototype pulls live events from USGS earthquakes, NOAA/NWS alerts, and NASA EONET, then estimates humanitarian impact, surfaces recommended nonprofits, and connects donors to deeper nonprofit analysis.
+          </p>
+          <div class="hero-actions">
+            <button class="primary" onclick="scrollToFeed()">Explore live incidents</button>
+            <button class="secondary" onclick="loadAll()">Refresh live data</button>
           </div>
         </div>
-      </div>
-    </section>
-
-    <div id="statusBanner" class="status-banner status-ok">Loading live feeds…</div>
-
-    <section class="card toolbar" id="liveFeed">
-      <div class="filters">
-        <button class="pill active" data-filter="all">All</button>
-        <button class="pill" data-filter="earthquake">Earthquakes</button>
-        <button class="pill" data-filter="weather">Weather</button>
-        <button class="pill" data-filter="wildfire">Wildfires</button>
-        <button class="pill" data-filter="volcano">Volcanoes</button>
-      </div>
-      <div class="controls">
-        <input id="searchInput" type="text" placeholder="Search region or event" />
-        <select id="sortSelect">
-          <option value="priority">Sort by priority</option>
-          <option value="recent">Most recent</option>
-          <option value="severity">Highest severity</option>
-        </select>
-      </div>
-    </section>
-
-    <section class="layout">
-      <aside class="panel">
-        <div class="panel-head">
+        <div class="card hero-side">
           <div>
-            <div class="panel-title">Live incident feed</div>
-            <div class="panel-sub">Normalized cards from multiple public APIs</div>
+            <div class="side-title">What this version does</div>
+            <div class="side-sub">Real browser fetches, normalized events, impact estimates, live filters, and nonprofit ranking</div>
           </div>
-          <div class="small" id="updatedAt">Waiting…</div>
-        </div>
-        <div class="events" id="eventList">
-          <div class="empty">Loading live events…</div>
-        </div>
-      </aside>
-
-      <main class="panel">
-        <div class="map-zone">
-          <div class="grid-map"></div>
-          <div class="pulse-point" id="mapPoint" style="left:52%;top:42%"></div>
-          <div class="map-caption">
-            <div>
-              <div class="panel-title">Approximate event area</div>
-              <div class="panel-sub" id="mapLabel">Waiting for live event data…</div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-label">Sources</div>
+              <div class="kpi-value">3</div>
+              <div class="kpi-note">USGS, NOAA/NWS, NASA EONET</div>
             </div>
-            <div class="small" id="coordLabel">Lat —, Lon —</div>
+            <div class="kpi">
+              <div class="kpi-label">Refresh cadence</div>
+              <div class="kpi-value">5 min</div>
+              <div class="kpi-note">Automatic refresh in browser</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Impact model</div>
+              <div class="kpi-value">Beta</div>
+              <div class="kpi-note">Estimated displaced and affected people</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Profile depth</div>
+              <div class="kpi-value">Expanded</div>
+              <div class="kpi-note">About links, filings, and internal analysis</div>
+            </div>
           </div>
         </div>
-        <div class="detail" id="detailPane">
-          <div class="empty">Choose an event to see details, weather context, and nonprofit matches.</div>
-        </div>
-      </main>
+      </section>
 
-      <aside class="panel sidebar-right">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title">Recommended nonprofits</div>
-            <div class="panel-sub">Ranked by type match, region fit, and response relevance</div>
-          </div>
-          <div class="small" id="ngoCount">0 matches</div>
+      <div id="statusBanner" class="status-banner status-ok">Loading live feeds…</div>
+
+      <section class="card toolbar" id="liveFeed">
+        <div class="filters">
+          <button class="pill active" data-filter="all">All</button>
+          <button class="pill" data-filter="earthquake">Earthquakes</button>
+          <button class="pill" data-filter="weather">Weather</button>
+          <button class="pill" data-filter="wildfire">Wildfires</button>
+          <button class="pill" data-filter="volcano">Volcanoes</button>
         </div>
-        <div class="nonprofits" id="ngoList"></div>
-      </aside>
+        <div class="controls">
+          <input id="searchInput" type="text" placeholder="Search region or event" />
+          <select id="sortSelect">
+            <option value="priority">Sort by priority</option>
+            <option value="recent">Most recent</option>
+            <option value="severity">Highest severity</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Live incident feed</div>
+              <div class="panel-sub">Normalized cards from multiple public APIs</div>
+            </div>
+            <div class="small" id="updatedAt">Waiting…</div>
+          </div>
+          <div class="events" id="eventList">
+            <div class="empty">Loading live events…</div>
+          </div>
+        </aside>
+
+        <main class="panel">
+          <div class="map-zone">
+            <div class="grid-map"></div>
+            <div class="pulse-point" id="mapPoint" style="left:52%;top:42%"></div>
+            <div class="map-caption">
+              <div>
+                <div class="panel-title">Approximate event area</div>
+                <div class="panel-sub" id="mapLabel">Waiting for live event data…</div>
+              </div>
+              <div class="small" id="coordLabel">Lat —, Lon —</div>
+            </div>
+          </div>
+          <div class="detail" id="detailPane">
+            <div class="empty">Choose an event to see details, humanitarian estimates, weather context, and nonprofit matches.</div>
+          </div>
+        </main>
+
+        <aside class="panel sidebar-right">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Recommended nonprofits</div>
+              <div class="panel-sub">Ranked by type match, region fit, and response relevance</div>
+            </div>
+            <div class="small" id="ngoCount">0 matches</div>
+          </div>
+          <div class="nonprofits" id="ngoList"></div>
+        </aside>
+      </section>
+
+      <div class="footer-note">
+        Built as a front-end prototype. Impact, displacement, and funding values below are modeled estimates for prioritization, not audited field counts. In production, add a backend cache, rate-limit protection, a vetted nonprofit dataset, and a clearer confidence model for humanitarian estimates.
+      </div>
     </section>
 
-    <div class="footer-note">
-      Built as a front-end prototype. In production, add a backend cache, rate-limit protection, a vetted nonprofit dataset, and a disclaimer that NASA EONET is mainly for visualization/general reference.
-    </div>
+    <section id="profileView" class="view">
+      <div class="profile-shell">
+        <section class="card profile-header">
+          <div class="profile-top">
+            <div>
+              <div class="eyebrow">Nonprofit profile</div>
+              <div class="profile-title" id="profileName">Organization</div>
+              <div class="profile-summary" id="profileSummary">Loading profile…</div>
+              <div class="tag-row" id="profileTags"></div>
+            </div>
+            <div class="profile-links">
+              <button class="ghost" onclick="goHome()">Back to live feed</button>
+              <a class="button-link primary" id="profileDonate" href="#" target="_blank" rel="noreferrer">Donate</a>
+            </div>
+          </div>
+          <div class="mini-kpis">
+            <div class="mini-kpi">
+              <div class="label">ReliefRadar trust score</div>
+              <div class="value" id="profileTrust">—</div>
+            </div>
+            <div class="mini-kpi">
+              <div class="label">Best-fit responses</div>
+              <div class="value" id="profileTypes">—</div>
+            </div>
+            <div class="mini-kpi">
+              <div class="label">Primary footprint</div>
+              <div class="value" id="profileRegions">—</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-grid">
+          <article class="card profile-panel">
+            <div class="panel-title">ReliefRadar analysis</div>
+            <div class="panel-sub">How we think about this nonprofit for disaster-response donors</div>
+            <div class="analysis-list" id="analysisList"></div>
+          </article>
+
+          <article class="card profile-panel">
+            <div class="panel-title">Source links and transparency</div>
+            <div class="panel-sub">Official pages plus filings or equivalent financial disclosure</div>
+            <div class="analysis-list" id="profileLinks"></div>
+          </article>
+
+          <article class="card profile-panel">
+            <div class="panel-title">Operational signals</div>
+            <div class="panel-sub">What this organization appears strongest at based on ReliefRadar scoring</div>
+            <div class="signal-list" id="signalList"></div>
+          </article>
+
+          <article class="card profile-panel">
+            <div class="panel-title">Donor fit</div>
+            <div class="panel-sub">When this organization makes the most sense inside ReliefRadar</div>
+            <div class="analysis-list" id="fitList"></div>
+          </article>
+        </section>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -301,76 +385,180 @@
 
     const NONPROFITS = [
       {
+        slug:'american-red-cross',
         name:'American Red Cross',
         types:['earthquake','weather','wildfire','volcano'],
         regions:['global','United States','Japan','Philippines','Indonesia','Türkiye','Turkey'],
         focus:'Emergency shelter, relief logistics, and rapid disaster response.',
         trust:95,
         url:'https://www.redcross.org/donate',
-        reason:'Strong immediate-response fit for displacement, shelter, and relief operations.'
+        aboutUrl:'https://www.redcross.org/about-us.html',
+        filingLabel:'Publications and annual reports',
+        filingUrl:'https://www.redcross.org/about-us/news-and-events/publications.html',
+        reason:'Strong immediate-response fit for displacement, shelter, and relief operations.',
+        summary:'Best for acute response moments when people need shelter, reunification support, supplies, and fast deployment capacity.',
+        tags:['Mass shelter','Disaster response','Global network'],
+        analysis:[
+          { title:'Strength', text:'Best suited for fast-moving disasters where shelter, relief distribution, and volunteer surge matter immediately.' },
+          { title:'Why it ranks well', text:'ReliefRadar gives it strong scores when likely displacement is high and the event demands large-scale logistics.' },
+          { title:'Watchout', text:'For highly medical or specialized recovery needs, a more targeted organization can be a better match.' }
+        ],
+        signals:['Strongest on short-term emergency response.','Particularly relevant when households may need temporary shelter.','Useful default choice when event data is incomplete but urgency is high.'],
+        donorFit:['Choose this when speed and broad disaster infrastructure matter most.','Strong fit for domestic and international crises with visible displacement.','Less targeted than issue-specific organizations for long recovery arcs.']
       },
       {
+        slug:'direct-relief',
         name:'Direct Relief',
         types:['earthquake','weather','wildfire','volcano'],
         regions:['global','Japan','Philippines','Indonesia','Türkiye','Turkey'],
         focus:'Medical aid, protective equipment, and support for emergency health systems.',
         trust:94,
         url:'https://www.directrelief.org/',
-        reason:'Ranks highly when access to clinics, medical supplies, or health support matters.'
+        aboutUrl:'https://www.directrelief.org/about/',
+        filingLabel:'Financial documents and Form 990 filings',
+        filingUrl:'https://www.directrelief.org/about/finance/financial-documents/',
+        reason:'Ranks highly when access to clinics, medical supplies, or health support matters.',
+        summary:'Best for health-system reinforcement, medicine delivery, and disaster contexts where clinics and supplies are bottlenecks.',
+        tags:['Medical logistics','Global health','Disaster medicine'],
+        analysis:[
+          { title:'Strength', text:'Especially strong when the disaster likely stresses hospitals, clinics, and medicine distribution.' },
+          { title:'Why it ranks well', text:'ReliefRadar boosts Direct Relief for severe disasters where health infrastructure may be disrupted.' },
+          { title:'Watchout', text:'It is less centered on shelter and household rebuilding than some response peers.' }
+        ],
+        signals:['High fit when medical continuity is a priority.','Good match for international response with supply-chain complexity.','Useful when donor wants practical health impact rather than broad shelter operations.'],
+        donorFit:['Choose this for medical support and health resilience.','Strong option when disaster severity suggests injury risk or clinic overload.','Pairs well with another nonprofit focused on shelter or rebuilding.']
       },
       {
+        slug:'team-rubicon',
         name:'Team Rubicon',
         types:['earthquake','weather','wildfire'],
         regions:['global','United States'],
         focus:'Veteran-led disaster response, cleanup, debris removal, and field deployment.',
         trust:91,
         url:'https://teamrubiconusa.org/donate/',
-        reason:'Strong for rapid domestic response and on-the-ground operational support.'
+        aboutUrl:'https://teamrubiconusa.org/about-us/',
+        filingLabel:'Financials and annual reports',
+        filingUrl:'https://teamrubiconusa.org/about-us/financials-annual-reports/',
+        reason:'Strong for rapid domestic response and on-the-ground operational support.',
+        summary:'Best when the need is hands-on field work, cleanup, muck-outs, debris removal, and community-level operational response.',
+        tags:['Field operations','Veteran-led','Domestic response'],
+        analysis:[
+          { title:'Strength', text:'Operationally strong for getting people and equipment into damaged communities quickly.' },
+          { title:'Why it ranks well', text:'ReliefRadar favors it in U.S. storms, wildfires, and cleanup-heavy events after the initial impact passes.' },
+          { title:'Watchout', text:'It is not a food or medical specialist, so it is best for operational recovery and field deployment.' }
+        ],
+        signals:['Strong domestic deployment fit.','Useful for cleanup-intensive disaster response.','Best where logistics and labor matter as much as direct cash or food aid.'],
+        donorFit:['Choose this when recovery operations on the ground matter.','Especially relevant for U.S. incidents with structural damage.','Not the strongest single option for international family assistance.']
       },
       {
+        slug:'habitat-for-humanity',
         name:'Habitat for Humanity',
         types:['earthquake','weather'],
         regions:['global','United States','Philippines','Türkiye','Turkey'],
         focus:'Housing recovery, rebuilding, and community recovery after damage.',
         trust:88,
         url:'https://www.habitat.org/donate',
-        reason:'Especially relevant when shelter repair and rebuilding are likely to matter.'
+        aboutUrl:'https://www.habitat.org/about',
+        filingLabel:'Annual reports and 990s',
+        filingUrl:'https://www.habitat.org/about/annual-reports-990s',
+        reason:'Especially relevant when shelter repair and rebuilding are likely to matter.',
+        summary:'Best for medium- to long-term rebuilding and housing recovery once the immediate emergency phase starts to stabilize.',
+        tags:['Housing recovery','Rebuilding','Longer-term'],
+        analysis:[
+          { title:'Strength', text:'Most compelling when housing loss is significant and reconstruction will shape recovery outcomes.' },
+          { title:'Why it ranks well', text:'ReliefRadar lifts Habitat in storms and earthquakes where shelter repair is a core need.' },
+          { title:'Watchout', text:'Less suited for the first hours of a disaster than rapid response organizations.' }
+        ],
+        signals:['Higher fit when long-term shelter needs emerge.','Useful for donors who want rebuilding rather than acute relief.','Can complement emergency-response organizations well.'],
+        donorFit:['Choose this for durable recovery.','Strong when homes are damaged and relocation may last months.','Less ideal as a stand-alone choice for fast lifesaving response.']
       },
       {
+        slug:'feeding-america',
         name:'Feeding America',
         types:['weather','wildfire'],
         regions:['United States'],
         focus:'Food distribution and support for displaced households and shelters.',
         trust:89,
         url:'https://www.feedingamerica.org/donate',
-        reason:'Useful when domestic disasters disrupt local food access.'
+        aboutUrl:'https://www.feedingamerica.org/about-us',
+        filingLabel:'Annual reports and Form 990s',
+        filingUrl:'https://www.feedingamerica.org/about-us/financials',
+        reason:'Useful when domestic disasters disrupt local food access.',
+        summary:'Best for U.S. events where food access becomes unstable for evacuees, shelters, and stressed households.',
+        tags:['Food access','U.S. network','Domestic support'],
+        analysis:[
+          { title:'Strength', text:'Strong national food-bank network makes it relevant when displacement quickly creates household-level food insecurity.' },
+          { title:'Why it ranks well', text:'ReliefRadar elevates Feeding America in U.S. storms and fires affecting communities at scale.' },
+          { title:'Watchout', text:'Its mission is narrower than all-purpose disaster response organizations.' }
+        ],
+        signals:['Best when food is an urgent bottleneck.','Most relevant for U.S. disasters.','Useful add-on donor choice beside shelter or medical nonprofits.'],
+        donorFit:['Choose this for near-term family support.','Good if you want a concrete, household-level domestic relief angle.','Less suitable for international disasters.']
       },
       {
+        slug:'care',
         name:'CARE',
         types:['earthquake','weather'],
         regions:['global','Philippines','Türkiye','Turkey','Japan'],
         focus:'Humanitarian response for families and vulnerable communities.',
         trust:90,
         url:'https://www.care.org/',
-        reason:'Good international fit where household-level humanitarian relief is needed.'
+        aboutUrl:'https://www.care.org/about-us/',
+        filingLabel:'Financial reports and Form 990',
+        filingUrl:'https://www.care.org/financial-reports/',
+        reason:'Good international fit where household-level humanitarian relief is needed.',
+        summary:'Best for international disasters where aid should reach vulnerable families, especially women and marginalized communities.',
+        tags:['International aid','Family support','Vulnerable communities'],
+        analysis:[
+          { title:'Strength', text:'Good fit for international humanitarian response with attention to vulnerable populations and household resilience.' },
+          { title:'Why it ranks well', text:'ReliefRadar favors CARE when the event is international and broad humanitarian relief is more relevant than specialized response.' },
+          { title:'Watchout', text:'It is broader in mission than purely disaster-native organizations.' }
+        ],
+        signals:['Good international family-level support signal.','Helpful when donor wants equity-oriented humanitarian response.','Useful in crises with complex social vulnerability.'],
+        donorFit:['Choose this for global disasters affecting households broadly.','Strong when vulnerability and access are as important as logistics.','Less specialized on domestic U.S. disaster operations.']
       },
       {
+        slug:'national-forest-foundation',
         name:'National Forest Foundation',
         types:['wildfire'],
         regions:['United States'],
         focus:'Forest restoration and long-term landscape recovery after wildfires.',
         trust:84,
         url:'https://www.nationalforests.org/',
-        reason:'More recovery-oriented than emergency shelter, but relevant for wildfire aftermath.'
+        aboutUrl:'https://www.nationalforests.org/about-us',
+        filingLabel:'Financial accountability and transparency',
+        filingUrl:'https://www.nationalforests.org/financial-accountability-transparency/',
+        reason:'More recovery-oriented than emergency shelter, but relevant for wildfire aftermath.',
+        summary:'Best for donors focused on restoration and long-term ecological recovery rather than immediate humanitarian support.',
+        tags:['Wildfire recovery','Restoration','Long-term resilience'],
+        analysis:[
+          { title:'Strength', text:'Strongest in post-fire recovery and restoration, not acute family relief.' },
+          { title:'Why it ranks well', text:'ReliefRadar includes it for wildfire users who care about recovery beyond the emergency window.' },
+          { title:'Watchout', text:'Not the right primary option when evacuees need immediate shelter, food, or medical help.' }
+        ],
+        signals:['Recovery-focused rather than response-focused.','Most relevant after immediate danger passes.','Good fit for donors prioritizing resilience and land restoration.'],
+        donorFit:['Choose this for post-disaster restoration.','Best as a complement to immediate relief giving.','Not the top first-click option for life-saving aid.']
       },
       {
+        slug:'world-food-programme',
         name:'World Food Programme',
         types:['earthquake','weather','volcano'],
         regions:['global','Philippines','Indonesia','Türkiye','Turkey','Japan'],
         focus:'Emergency food operations and humanitarian logistics.',
         trust:93,
         url:'https://www.wfp.org/support-us/stories/how-to-donate-wfp',
-        reason:'Strong fit when large groups may need food access quickly.'
+        aboutUrl:'https://www.wfp.org/about',
+        filingLabel:'Audited annual accounts',
+        filingUrl:'https://www.wfp.org/publications/audited-annual-accounts',
+        reason:'Strong fit when large groups may need food access quickly.',
+        summary:'Best when large-scale food operations and global humanitarian logistics are central to the response.',
+        tags:['Global logistics','Food operations','Large-scale response'],
+        analysis:[
+          { title:'Strength', text:'Particularly strong for large population shocks where food movement and logistics are critical.' },
+          { title:'Why it ranks well', text:'ReliefRadar gives WFP a lift when estimated affected populations are very large in international crises.' },
+          { title:'Watchout', text:'WFP is a U.N. agency, so it does not use IRS Form 990 in the way U.S. nonprofits do.' }
+        ],
+        signals:['High fit for very large international crises.','Food and logistics specialist.','Best when scale matters more than local rebuilding.'],
+        donorFit:['Choose this when mass food support is the main concern.','Especially useful in international disasters with wide disruption.','Not directly comparable to U.S. nonprofit tax filings.']
       }
     ];
 
@@ -380,6 +568,30 @@
 
     function scrollToFeed() {
       document.getElementById('liveFeed').scrollIntoView({ behavior:'smooth' });
+    }
+
+    function goHome() {
+      history.pushState({}, '', window.location.pathname);
+      renderRoute();
+    }
+
+    function openProfile(slug) {
+      history.pushState({}, '', `#ngo/${slug}`);
+      renderRoute();
+      window.scrollTo({ top:0, behavior:'smooth' });
+    }
+
+    function getRoute() {
+      const hash = window.location.hash || '';
+      if (hash.startsWith('#ngo/')) return { page:'profile', slug:hash.replace('#ngo/','') };
+      return { page:'home' };
+    }
+
+    function renderRoute() {
+      const route = getRoute();
+      document.getElementById('homeView').classList.toggle('active', route.page === 'home');
+      document.getElementById('profileView').classList.toggle('active', route.page === 'profile');
+      if (route.page === 'profile') renderProfile(route.slug);
     }
 
     function setStatus(message, kind='ok') {
@@ -412,6 +624,58 @@
 
     function safeText(v, fallback='—') {
       return (v === null || v === undefined || v === '') ? fallback : v;
+    }
+
+    function formatInt(n) {
+      return new Intl.NumberFormat('en-US', { maximumFractionDigits:0 }).format(n);
+    }
+
+    function formatMoney(n) {
+      return new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', maximumFractionDigits:0 }).format(n);
+    }
+
+    function rangeText(min, max, money=false) {
+      return `${money ? formatMoney(min) : formatInt(min)} – ${money ? formatMoney(max) : formatInt(max)}`;
+    }
+
+    function estimateImpact(event) {
+      const base = {
+        earthquake: {
+          1:{ displaced:[120,1200], affected:[900,7000], perPerson:[45,160], confidence:'Low confidence' },
+          2:{ displaced:[1500,12000], affected:[9000,85000], perPerson:[90,320], confidence:'Medium confidence' },
+          3:{ displaced:[12000,150000], affected:[80000,1200000], perPerson:[140,550], confidence:'Medium confidence' }
+        },
+        weather: {
+          1:{ displaced:[200,3000], affected:[2000,18000], perPerson:[35,120], confidence:'Low confidence' },
+          2:{ displaced:[3000,25000], affected:[18000,140000], perPerson:[70,240], confidence:'Medium confidence' },
+          3:{ displaced:[20000,220000], affected:[120000,1800000], perPerson:[110,420], confidence:'Medium confidence' }
+        },
+        wildfire: {
+          1:{ displaced:[100,2200], affected:[1500,14000], perPerson:[55,170], confidence:'Low confidence' },
+          2:{ displaced:[2000,18000], affected:[12000,110000], perPerson:[95,310], confidence:'Medium confidence' },
+          3:{ displaced:[15000,100000], affected:[75000,750000], perPerson:[160,480], confidence:'Medium confidence' }
+        },
+        volcano: {
+          1:{ displaced:[150,1800], affected:[1200,11000], perPerson:[60,190], confidence:'Low confidence' },
+          2:{ displaced:[1800,20000], affected:[15000,130000], perPerson:[100,340], confidence:'Medium confidence' },
+          3:{ displaced:[14000,120000], affected:[90000,950000], perPerson:[170,520], confidence:'Medium confidence' }
+        }
+      };
+
+      const estimate = (base[event.type] && base[event.type][event.severity]) || base.weather[1];
+      const displaced = estimate.displaced;
+      const affected = estimate.affected;
+      const perPerson = estimate.perPerson;
+      const stabilization = [displaced[0] * perPerson[0], displaced[1] * perPerson[1]];
+
+      return {
+        displaced,
+        affected,
+        perPerson,
+        stabilization,
+        confidence: estimate.confidence,
+        note:'Prototype estimate derived from event type and severity. Use as a prioritization cue, not a verified field total.'
+      };
     }
 
     function centroidFromGeometry(geometry) {
@@ -501,7 +765,7 @@
       });
     }
 
-    function latestCoordinate(geometry, dates) {
+    function latestCoordinate(geometry) {
       if (!geometry || !geometry.coordinates) return { lat:null, lon:null };
       const coords = geometry.coordinates;
       if (geometry.type === 'Point') return { lon: coords[0], lat: coords[1] };
@@ -516,7 +780,7 @@
       const d = await fetchJson(url);
       return (d.features || []).map(f => {
         const props = f.properties || {};
-        const coord = latestCoordinate(f.geometry, props.geometryDates);
+        const coord = latestCoordinate(f.geometry);
         const when = props.geometryDates && props.geometryDates.length
           ? new Date(props.geometryDates[props.geometryDates.length - 1]).getTime()
           : Date.now();
@@ -561,11 +825,14 @@
 
     function scoreNonprofit(event, ngo) {
       let score = 0;
+      const impact = estimateImpact(event);
       if (ngo.types.includes(event.type)) score += 45;
       if (ngo.regions.includes('global')) score += 18;
       if (ngo.regions.some(r => event.region.includes(r))) score += 28;
       score += Math.round(ngo.trust * 0.12);
       if (event.severity >= 3 && /emergency|rapid|medical|relief|shelter/i.test(`${ngo.focus} ${ngo.reason}`)) score += 8;
+      if (impact.displaced[1] >= 50000 && /food|logistics|medical|shelter/i.test(`${ngo.focus} ${ngo.reason}`)) score += 6;
+      if (impact.displaced[1] >= 15000 && /rebuilding|housing|recovery|cleanup/i.test(`${ngo.focus} ${ngo.reason}`)) score += 4;
       return score;
     }
 
@@ -606,17 +873,21 @@
         el.innerHTML = '<div class="empty">No events match the current filters.</div>';
         return;
       }
-      el.innerHTML = list.map(e => `
-        <article class="event ${e.id === selectedId ? 'active' : ''}" onclick="selectEvent('${e.id}')">
-          <div class="row">
-            <span class="badge type-${e.type}">${e.type}</span>
-            <span class="small ${sevClass(e.severity)}">${sevWords(e.severity)}</span>
-          </div>
-          <div class="event-title">${escapeHtml(e.title)}</div>
-          <div class="event-meta">${escapeHtml(e.region)} · ${escapeHtml(e.source)}</div>
-          <div class="event-meta">${timeAgo(e.ts)}</div>
-        </article>
-      `).join('');
+      el.innerHTML = list.map(e => {
+        const impact = estimateImpact(e);
+        return `
+          <article class="event ${e.id === selectedId ? 'active' : ''}" onclick="selectEvent('${e.id}')">
+            <div class="row">
+              <span class="badge type-${e.type}">${e.type}</span>
+              <span class="small ${sevClass(e.severity)}">${sevWords(e.severity)}</span>
+            </div>
+            <div class="event-title">${escapeHtml(e.title)}</div>
+            <div class="event-meta">${escapeHtml(e.region)} · ${escapeHtml(e.source)}</div>
+            <div class="event-meta">Est. displaced: ${rangeText(impact.displaced[0], impact.displaced[1])}</div>
+            <div class="event-meta">${timeAgo(e.ts)}</div>
+          </article>
+        `;
+      }).join('');
     }
 
     function escapeHtml(str) {
@@ -632,6 +903,7 @@
         return;
       }
 
+      const impact = estimateImpact(event);
       const fallbackForecast = [
         { day:'Now', temp:'—', note:'No forecast available' },
         { day:'Next', temp:'—', note:'Location may be outside NOAA forecast coverage' },
@@ -656,6 +928,30 @@
         </div>
 
         <div class="section">
+          <h3>Estimated humanitarian impact</h3>
+          <div class="metrics">
+            <div class="metric">
+              <div class="label">Estimated displaced people</div>
+              <div class="value">${rangeText(impact.displaced[0], impact.displaced[1])}</div>
+              <div class="subvalue">Likely needing short-term shelter or relocation</div>
+            </div>
+            <div class="metric">
+              <div class="label">Estimated affected people</div>
+              <div class="value">${rangeText(impact.affected[0], impact.affected[1])}</div>
+              <div class="subvalue">Broader impact including service disruption and household stress</div>
+            </div>
+            <div class="metric">
+              <div class="label">Est. relief dollars per displaced person</div>
+              <div class="value">${rangeText(impact.perPerson[0], impact.perPerson[1], true)}</div>
+              <div class="subvalue">Model-based support margin, not a verified cost per life</div>
+            </div>
+          </div>
+          <div class="alert-box">
+            <strong>Estimated stabilization budget:</strong> ${rangeText(impact.stabilization[0], impact.stabilization[1], true)} · ${impact.confidence}. ${impact.note}
+          </div>
+        </div>
+
+        <div class="section">
           <h3>Source context</h3>
           <p class="detail-copy">${escapeHtml(event.rawSourceLabel)} · ${timeAgo(event.ts)}</p>
         </div>
@@ -674,11 +970,9 @@
         </div>
 
         ${event.instruction ? `<div class="alert-box"><strong>Instructions:</strong> ${escapeHtml(event.instruction)}</div>` : ''}
-
         ${event.link ? `<div class="alert-box">Source link: <a href="${event.link}" target="_blank" rel="noreferrer">Open event source</a></div>` : ''}
-
         <div class="alert-box">
-          Prototype note: coordinates are approximate for some alerts, and global weather forecasts may need a non-NOAA fallback outside NOAA coverage.
+          Prototype note: event coordinates are approximate for some alerts, and the humanitarian estimates shown here are directional. They help rank nonprofits and donation urgency, but they are not field-verified counts.
         </div>
       `;
 
@@ -713,15 +1007,45 @@
           <div class="ngo-reason" style="margin-top:10px">Why recommended: ${escapeHtml(ngo.reason)}</div>
           <div class="ngo-actions">
             <a class="button-link primary" href="${ngo.url}" target="_blank" rel="noreferrer">Donate</a>
-            <button class="secondary" onclick="showProfile('${encodeURIComponent(JSON.stringify(ngo))}')">View profile</button>
+            <button class="secondary" onclick="openProfile('${ngo.slug}')">View profile</button>
           </div>
         </article>
       `).join('');
     }
 
-    function showProfile(encoded) {
-      const ngo = JSON.parse(decodeURIComponent(encoded));
-      alert(`${ngo.name}\n\nFocus: ${ngo.focus}\n\nReason: ${ngo.reason}\n\nIn a full version, this opens a profile with ratings, service area, active responses, and donation transparency.`);
+    function renderProfile(slug) {
+      const ngo = NONPROFITS.find(item => item.slug === slug);
+      if (!ngo) {
+        goHome();
+        return;
+      }
+
+      document.getElementById('profileName').textContent = ngo.name;
+      document.getElementById('profileSummary').textContent = ngo.summary;
+      document.getElementById('profileTrust').textContent = `${ngo.trust}/100`;
+      document.getElementById('profileTypes').textContent = ngo.types.map(t => t[0].toUpperCase() + t.slice(1)).join(', ');
+      document.getElementById('profileRegions').textContent = ngo.regions.slice(0,3).join(', ');
+      document.getElementById('profileDonate').href = ngo.url;
+      document.getElementById('profileTags').innerHTML = ngo.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+
+      document.getElementById('analysisList').innerHTML = ngo.analysis.map(item => `
+        <div class="analysis-item"><strong>${escapeHtml(item.title)}:</strong> ${escapeHtml(item.text)}</div>
+      `).join('');
+
+      const financialLabel = ngo.name === 'World Food Programme' ? 'Audited accounts' : 'IRS Form 990 / financial disclosures';
+      document.getElementById('profileLinks').innerHTML = `
+        <div class="analysis-item"><strong>Official about page:</strong> <a href="${ngo.aboutUrl}" target="_blank" rel="noreferrer">Open organization overview</a></div>
+        <div class="analysis-item"><strong>${financialLabel}:</strong> <a href="${ngo.filingUrl}" target="_blank" rel="noreferrer">${escapeHtml(ngo.filingLabel)}</a></div>
+        <div class="analysis-item"><strong>Donation page:</strong> <a href="${ngo.url}" target="_blank" rel="noreferrer">Open donation page</a></div>
+      `;
+
+      document.getElementById('signalList').innerHTML = ngo.signals.map(item => `
+        <div class="signal-item">${escapeHtml(item)}</div>
+      `).join('');
+
+      document.getElementById('fitList').innerHTML = ngo.donorFit.map(item => `
+        <div class="analysis-item">${escapeHtml(item)}</div>
+      `).join('');
     }
 
     function selectEvent(id) {
@@ -799,7 +1123,11 @@
       renderDetail();
     });
 
+    window.addEventListener('hashchange', renderRoute);
+    window.addEventListener('popstate', renderRoute);
+
     loadAll();
+    renderRoute();
     setInterval(loadAll, 5 * 60 * 1000);
   </script>
 </body>
